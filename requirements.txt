@@ -1,0 +1,6 @@
+PySide6
+openpyxl
+pandas
+matplotlib
+pynput
+pyinstaller
