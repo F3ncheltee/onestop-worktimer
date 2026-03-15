@@ -158,7 +158,7 @@ class Storage:
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT s.*, p.name as project_name 
+            SELECT s.*, p.name as project_name, p.color as project_color
             FROM sessions s
             LEFT JOIN projects p ON s.project_id = p.id
             WHERE s.end_ts IS NULL 
@@ -178,7 +178,7 @@ class Storage:
         cursor = conn.cursor()
         
         query = '''
-            SELECT s.*, p.name as project_name 
+            SELECT s.*, p.name as project_name, p.color as project_color
             FROM sessions s
             LEFT JOIN projects p ON s.project_id = p.id
             WHERE 1=1
@@ -236,6 +236,30 @@ class Storage:
             raise ValueError("Project already exists")
         finally:
              if conn: conn.close()
+
+    def update_project(self, project_id: int, name: str, color: str = None):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("UPDATE projects SET name = ?, color = ? WHERE id = ?", (name, color, project_id))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            conn.close()
+            raise ValueError("Project name already exists")
+        finally:
+             if conn: conn.close()
+
+    def delete_project(self, project_id: int):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # First, set project_id to NULL in sessions table to prevent breaking history
+            cursor.execute("UPDATE sessions SET project_id = NULL WHERE project_id = ?", (project_id,))
+            # Then delete the project
+            cursor.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+            conn.commit()
+        finally:
+            if conn: conn.close()
 
     def save_setting(self, key: str, value: Any):
         """Saves a setting value (JSON encoded)."""

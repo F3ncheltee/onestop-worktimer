@@ -29,12 +29,17 @@ class Analytics:
         cursor.execute("SELECT SUM(duration_sec) FROM sessions WHERE date >= ?", (start_of_month_str,))
         month_sec = cursor.fetchone()[0] or 0
         
+        # All Time
+        cursor.execute("SELECT SUM(duration_sec) FROM sessions")
+        all_time_sec = cursor.fetchone()[0] or 0
+        
         conn.close()
         
         return {
             "today": self._format_hours(today_sec),
             "week": self._format_hours(week_sec),
-            "month": self._format_hours(month_sec)
+            "month": self._format_hours(month_sec),
+            "all_time": self._format_hours(all_time_sec)
         }
 
     def get_daily_hours(self, days: int = 14) -> Dict[str, List[Any]]:
@@ -72,6 +77,41 @@ class Analytics:
             current += timedelta(days=1)
             
         return {"dates": dates, "hours": hours}
+
+    def get_project_hours(self, days: int = 30) -> Dict[str, List[Any]]:
+        """Returns data for project breakdown: names, hours, and colors."""
+        conn = self.storage._get_connection()
+        cursor = conn.cursor()
+        
+        start_date = datetime.now() - timedelta(days=days)
+        start_str = start_date.strftime("%Y-%m-%d")
+        
+        cursor.execute('''
+            SELECT p.name, p.color, SUM(s.duration_sec) 
+            FROM sessions s
+            LEFT JOIN projects p ON s.project_id = p.id
+            WHERE s.date >= ? 
+            GROUP BY s.project_id 
+            ORDER BY SUM(s.duration_sec) DESC
+        ''', (start_str,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        names = []
+        hours = []
+        colors = []
+        
+        for row in rows:
+            name = row[0] or "No Project"
+            color = row[1] or "#bdc3c7"
+            sec = row[2] or 0
+            
+            names.append(name)
+            colors.append(color)
+            hours.append(round(sec / 3600, 2))
+            
+        return {"names": names, "hours": hours, "colors": colors}
 
     def _format_hours(self, seconds: int) -> str:
         hours = round(seconds / 3600, 1)

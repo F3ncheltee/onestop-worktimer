@@ -9,17 +9,17 @@ A simple, offline-only desktop timer for tracking work sessions, designed for fr
 - **Analytics**: Visual overview of your work hours (Today, Week, Month, and 14-day history chart).
 - **Projects**: Tag sessions with projects for better organization.
 - **History & Export**: View past sessions, filter by date/search, edit/add past sessions, and export to CSV/Excel.
-- **Offline Storage**: All data is stored locally in `worktrack.db` (SQLite). No cloud, no telemetry.
+- **Offline Storage**: All data is stored locally in `worktrack.db` (SQLite), created in the same folder as the app when you first run it—one database per user/machine. No cloud, no telemetry.
 - **System Tray**: Minimized app stays in the system tray.
 - **Idle Detection**: Warns you if you've been away for more than 5 minutes.
 
 ## Installation (For Users)
 
-**Option A: Single Executable (Recommended)**
-1.  **Download**: Get `WorkTrackTimer.exe` from the `dist/` folder (or the Releases section on GitHub).
-2.  **Install**: No installation required! Just place the file anywhere you like (e.g., Desktop or Documents).
-3.  **Run**: Double-click `WorkTrackTimer.exe` to start.
-4.  **Uninstall**: Simply delete the `.exe` file and the `worktrack.db` file (which is created automatically in the same folder).
+**Option A: Single Executable (Recommended for quick install)**
+1.  **Download**: Get `WorkTrackTimer.exe` from the [Releases](https://github.com/F3ncheltee/onestop-worktimer/releases) page on GitHub (or build it yourself—see *Building the Executable* below).
+2.  **Install**: No installation required! Place the file anywhere (e.g., Desktop or Documents).
+3.  **Run**: Double-click `WorkTrackTimer.exe`. A `worktrack.db` file will be created in the same folder for your sessions.
+4.  **Uninstall**: Delete the `.exe` and the `worktrack.db` file in that folder.
 
 **Option B: Python Source**
 1.  Ensure Python 3.8+ is installed.

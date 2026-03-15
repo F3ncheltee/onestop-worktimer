@@ -2,6 +2,7 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QTableWidget, QTableWidgetI
                                QPushButton, QHBoxLayout, QHeaderView, QFileDialog, QMessageBox,
                                QLabel, QDateEdit, QLineEdit)
 from PySide6.QtCore import Qt, QDate
+from PySide6.QtGui import QColor, QBrush
 from app.core.storage import Storage
 from app.core.export import Exporter
 from app.ui.dialogs import SessionDialog
@@ -101,13 +102,16 @@ class SessionsWindow(QDialog):
         
         for i, session in enumerate(self.current_sessions):
             # ID
-            self.table.setItem(i, 0, QTableWidgetItem(str(session['id'])))
+            item_id = QTableWidgetItem(str(session['id']))
+            self.table.setItem(i, 0, item_id)
             
             # Date
-            self.table.setItem(i, 1, QTableWidgetItem(session.get('date', '')))
+            item_date = QTableWidgetItem(session.get('date', ''))
+            self.table.setItem(i, 1, item_date)
             
             # Project
-            self.table.setItem(i, 2, QTableWidgetItem(session.get('project_name') or '-'))
+            item_proj = QTableWidgetItem(session.get('project_name') or '-')
+            self.table.setItem(i, 2, item_proj)
             
             # Start
             start = session.get('start_ts', '')
@@ -116,7 +120,8 @@ class SessionsWindow(QDialog):
                     dt = datetime.fromisoformat(start)
                     start = dt.strftime("%H:%M:%S")
                 except: pass
-            self.table.setItem(i, 3, QTableWidgetItem(start))
+            item_start = QTableWidgetItem(start)
+            self.table.setItem(i, 3, item_start)
             
             # End
             end = session.get('end_ts', '')
@@ -125,7 +130,8 @@ class SessionsWindow(QDialog):
                     dt = datetime.fromisoformat(end)
                     end = dt.strftime("%H:%M:%S")
                 except: pass
-            self.table.setItem(i, 4, QTableWidgetItem(end or "Running"))
+            item_end = QTableWidgetItem(end or "Running")
+            self.table.setItem(i, 4, item_end)
             
             # Duration
             dur_sec = session.get('duration_sec')
@@ -134,10 +140,27 @@ class SessionsWindow(QDialog):
                 m, s = divmod(dur_sec, 60)
                 h, m = divmod(m, 60)
                 dur_str = f"{h:02}:{m:02}:{s:02}"
-            self.table.setItem(i, 5, QTableWidgetItem(dur_str))
+            item_dur = QTableWidgetItem(dur_str)
+            self.table.setItem(i, 5, item_dur)
             
             # Comment
-            self.table.setItem(i, 6, QTableWidgetItem(session.get('comment', '')))
+            item_comment = QTableWidgetItem(session.get('comment', ''))
+            self.table.setItem(i, 6, item_comment)
+            
+            # Apply color if available
+            color_hex = session.get('project_color')
+            if color_hex:
+                try:
+                    color = QColor(color_hex)
+                    # Make it slightly transparent/lighter for table row
+                    color.setAlpha(50)
+                    brush = QBrush(color)
+                    for col in range(7):
+                        item = self.table.item(i, col)
+                        if item:
+                            item.setBackground(brush)
+                except:
+                    pass
 
     def add_session(self):
         dlg = SessionDialog(self.storage, parent=self)

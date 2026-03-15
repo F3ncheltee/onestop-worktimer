@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-                               QDateTimeEdit, QComboBox, QPushButton, QMessageBox, QFormLayout)
+                               QDateTimeEdit, QComboBox, QPushButton, QMessageBox, QFormLayout, QColorDialog)
 from PySide6.QtCore import Qt, QDateTime
 from app.core.storage import Storage
 from datetime import datetime
@@ -114,27 +114,139 @@ class SessionDialog(QDialog):
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
-class ProjectDialog(QDialog):
-    def __init__(self, storage: Storage, parent=None):
+class ProjectEditDialog(QDialog):
+    def __init__(self, storage: Storage, project_data=None, parent=None):
         super().__init__(parent)
         self.storage = storage
-        self.setWindowTitle("Manage Projects")
+        self.project_data = project_data
+        
+        self.setWindowTitle("Edit Project" if project_data else "Add Project")
         self.layout = QVBoxLayout(self)
         
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("Project Name")
         self.layout.addWidget(self.name_edit)
         
-        self.add_btn = QPushButton("Add Project")
-        self.add_btn.clicked.connect(self.add_project)
-        self.layout.addWidget(self.add_btn)
+        color_layout = QHBoxLayout()
+        self.color_btn = QPushButton("Select Color")
+        self.selected_color = "#3498db" # Default color
+        
+        if project_data:
+            self.name_edit.setText(project_data.get('name', ''))
+            self.selected_color = project_data.get('color') or "#3498db"
+            
+        self.update_color_btn()
+        self.color_btn.clicked.connect(self.choose_color)
+        color_layout.addWidget(QLabel("Color:"))
+        color_layout.addWidget(self.color_btn)
+        self.layout.addLayout(color_layout)
+        
+        self.save_btn = QPushButton("Save Project")
+        self.save_btn.clicked.connect(self.save_project)
+        self.layout.addWidget(self.save_btn)
 
-    def add_project(self):
+    def update_color_btn(self):
+        try:
+            h = self.selected_color.lstrip('#')
+            if len(h) == 6:
+                r, g, b = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+                luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                text_color = "black" if luminance > 0.5 else "white"
+            else:
+                text_color = "white"
+        except:
+            text_color = "white"
+            
+        self.color_btn.setStyleSheet(f"background-color: {self.selected_color}; color: {text_color};")
+
+    def choose_color(self):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.selected_color = color.name()
+            self.update_color_btn()
+
+    def save_project(self):
         name = self.name_edit.text().strip()
         if not name:
             return
         try:
-            self.storage.add_project(name)
+            if self.project_data:
+                self.storage.update_project(self.project_data['id'], name, self.selected_color)
+            else:
+                self.storage.add_project(name, self.selected_color)
             self.accept()
         except Exception as e:
             QMessageBox.warning(self, "Error", str(e))
+
+from PySide6.QtWidgets import QListWidget, QListWidgetItem
+
+class ManageProjectsDialog(QDialog):
+    def __init__(self, storage: Storage, parent=None):
+        super().__init__(parent)
+        self.storage = storage
+        self.setWindowTitle("Manage Projects")
+        self.resize(400, 300)
+        self.layout = QVBoxLayout(self)
+        
+        self.list_widget = QListWidget()
+        self.layout.addWidget(self.list_widget)
+        
+        btn_layout = QHBoxLayout()
+        
+        self.add_btn = QPushButton("Add New")
+        self.add_btn.clicked.connect(self.add_project)
+        btn_layout.addWidget(self.add_btn)
+        
+        self.edit_btn = QPushButton("Edit Selected")
+        self.edit_btn.clicked.connect(self.edit_project)
+        btn_layout.addWidget(self.edit_btn)
+        
+        self.del_btn = QPushButton("Delete Selected")
+        self.del_btn.setStyleSheet("color: red;")
+        self.del_btn.clicked.connect(self.delete_project)
+        btn_layout.addWidget(self.del_btn)
+        
+        self.layout.addLayout(btn_layout)
+        
+        self.projects = []
+        self.load_projects()
+        
+    def load_projects(self):
+        self.list_widget.clear()
+        self.projects = self.storage.get_projects()
+        for p in self.projects:
+            item = QListWidgetItem(p['name'])
+            # Store ID in item data
+            item.setData(Qt.ItemDataRole.UserRole, p['id'])
+            self.list_widget.addItem(item)
+            
+    def add_project(self):
+        dlg = ProjectEditDialog(self.storage, parent=self)
+        if dlg.exec():
+            self.load_projects()
+            
+    def edit_project(self):
+        item = self.list_widget.currentItem()
+        if not item:
+            return
+        p_id = item.data(Qt.ItemDataRole.UserRole)
+        project_data = next((p for p in self.projects if p['id'] == p_id), None)
+        
+        if project_data:
+            dlg = ProjectEditDialog(self.storage, project_data, parent=self)
+            if dlg.exec():
+                self.load_projects()
+                
+    def delete_project(self):
+        item = self.list_widget.currentItem()
+        if not item:
+            return
+        p_id = item.data(Qt.ItemDataRole.UserRole)
+        
+        res = QMessageBox.question(self, "Confirm Delete", 
+                                   "Are you sure you want to delete this project? Sessions will be kept but unlinked from the project.", 
+                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        
+        if res == QMessageBox.StandardButton.Yes:
+            self.storage.delete_project(p_id)
+            self.load_projects()

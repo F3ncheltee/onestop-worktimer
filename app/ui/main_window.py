@@ -4,13 +4,14 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QLineEdit, 
                                QTextEdit, QMessageBox, QSystemTrayIcon, QMenu,
                                QRadioButton, QButtonGroup, QTimeEdit, QGroupBox, QFrame,
-                               QComboBox)
+                               QComboBox, QDialog, QGridLayout)
 from PySide6.QtCore import QTimer, Qt, QTime
 from PySide6.QtGui import QIcon, QAction
 from app.core.timer import Timer
 from app.core.storage import Storage
 from app.ui.sessions_window import SessionsWindow
-from app.ui.dialogs import ProjectDialog
+from app.ui.dialogs import ManageProjectsDialog
+from app.ui.settings_dialog import SettingsDialog
 import winsound
 from pynput import keyboard
 
@@ -19,12 +20,11 @@ import ctypes
 import os
 
 class IdleDetector:
-    def __init__(self, threshold_minutes=5, callback=None):
-        self.threshold_seconds = threshold_minutes * 60
-        self.callback = callback
-        self.last_activity = 0
+    def __init__(self):
+        pass
 
     def get_idle_time(self):
+        """Returns idle time in seconds."""
         class LASTINPUTINFO(ctypes.Structure):
             _fields_ = [("cbSize", ctypes.c_uint), ("dwTime", ctypes.c_uint)]
             
@@ -35,16 +35,112 @@ class IdleDetector:
              return millis / 1000.0
         return 0
 
+class IdleWarningDialog(QDialog):
+    def __init__(self, timeout_sec=30, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Are you still working?")
+        self.resize(300, 150)
+        self.timeout_sec = timeout_sec
+        self.remaining = timeout_sec
+        
+        layout = QVBoxLayout(self)
+        self.label = QLabel(f"No activity detected.\nPausing timer in {self.remaining} seconds.")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        layout.addWidget(self.label)
+        
+        btn = QPushButton("I'm still here!")
+        btn.setStyleSheet("background-color: #2ecc71; color: white; padding: 10px;")
+        btn.clicked.connect(self.accept)
+        layout.addWidget(btn)
+        
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.tick)
+        self.timer.start(1000)
+
+    def tick(self):
+        self.remaining -= 1
+        self.label.setText(f"No activity detected.\nPausing timer in {self.remaining} seconds.")
+        if self.remaining <= 0:
+            self.reject() # Timeout -> Auto Stop
+
+class SmartReminderDialog(QDialog):
+    def __init__(self, worked_minutes, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Smart Reminder")
+        self.resize(350, 300)
+        
+        layout = QVBoxLayout(self)
+        
+        self.label = QLabel(f"You've been working for {worked_minutes} minutes straight.\n\nIt's good to take a step back and refresh your mind!")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        self.label.setWordWrap(True)
+        layout.addWidget(self.label)
+        
+        btn_layout = QVBoxLayout()
+        btn_layout.setSpacing(10)
+        
+        self.break_btn = QPushButton("☕ Take a 5 min break")
+        self.break_btn.setStyleSheet("background-color: #3498db; color: white; padding: 10px; font-weight: bold; border-radius: 5px;")
+        self.break_btn.clicked.connect(self.take_break)
+        btn_layout.addWidget(self.break_btn)
+        
+        self.switch_btn = QPushButton("🔄 Switch Project / Task")
+        self.switch_btn.setStyleSheet("background-color: #9b59b6; color: white; padding: 10px; font-weight: bold; border-radius: 5px;")
+        self.switch_btn.clicked.connect(self.switch_project)
+        btn_layout.addWidget(self.switch_btn)
+        
+        self.continue_btn = QPushButton("▶ Continue Working")
+        self.continue_btn.setStyleSheet("background-color: #2ecc71; color: white; padding: 10px; font-weight: bold; border-radius: 5px;")
+        self.continue_btn.clicked.connect(self.continue_work)
+        btn_layout.addWidget(self.continue_btn)
+        
+        self.stop_btn = QPushButton("⏹ Stop Timer")
+        self.stop_btn.setStyleSheet("background-color: #e74c3c; color: white; padding: 10px; font-weight: bold; border-radius: 5px;")
+        self.stop_btn.clicked.connect(self.stop_work)
+        btn_layout.addWidget(self.stop_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        self.action = None
+        
+    def take_break(self):
+        self.action = "break"
+        self.accept()
+        
+    def switch_project(self):
+        self.action = "switch"
+        self.accept()
+        
+    def continue_work(self):
+        self.action = "continue"
+        self.accept()
+        
+    def stop_work(self):
+        self.action = "stop"
+        self.accept()
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        self.setWindowTitle("WorkTrack Timer")
-        self.resize(500, 500)
+        self.setWindowTitle("OneStop-Worktimer")
+        self.resize(550, 650)
         
         # Core components
         self.storage = Storage()
         self.timer_logic = Timer(self.storage)
+        
+        # Idle State
+        self.idle_detector = IdleDetector()
+        self.auto_paused = False
+        self.idle_warning_active = False
+        self.warning_dialog = None
+        
+        # Smart Reminders State
+        self.smart_reminder_active = False
+        self.next_reminder_sec = 0
         
         # UI Setup
         self.central_widget = QWidget()
@@ -52,6 +148,10 @@ class MainWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central_widget)
         self.layout.setSpacing(15)
         self.layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Quick Start (layout created early so reload_projects() can use it)
+        self.quick_start_group = QGroupBox("Quick Start")
+        self.quick_start_layout = QGridLayout(self.quick_start_group)
         
         # Styles
         self.setStyleSheet("""
@@ -117,9 +217,10 @@ class MainWindow(QMainWindow):
         self.project_combo.addItem("No Project", None)
         self.reload_projects()
         
-        self.add_proj_btn = QPushButton("+")
+        self.add_proj_btn = QPushButton("⚙")
+        self.add_proj_btn.setToolTip("Manage Projects")
         self.add_proj_btn.setFixedWidth(30)
-        self.add_proj_btn.clicked.connect(self.add_new_project)
+        self.add_proj_btn.clicked.connect(self.manage_projects)
         
         proj_layout.addWidget(QLabel("Project:"))
         proj_layout.addWidget(self.project_combo, 1)
@@ -132,6 +233,9 @@ class MainWindow(QMainWindow):
         input_layout.addWidget(self.comment_input)
         
         self.layout.addWidget(input_group)
+        
+        # --- Quick Start Projects (widget added to layout here) ---
+        self.layout.addWidget(self.quick_start_group)
         
         # --- Action Buttons ---
         button_layout = QHBoxLayout()
@@ -161,21 +265,28 @@ class MainWindow(QMainWindow):
         # --- Footer ---
         footer_layout = QHBoxLayout()
         
-        self.sessions_button = QPushButton("View History / Export")
+        self.sessions_button = QPushButton("History")
         self.sessions_button.setFlat(True)
         self.sessions_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.sessions_button.setStyleSheet("color: #3498db; text-decoration: underline;")
         self.sessions_button.clicked.connect(self.open_sessions)
-        
         footer_layout.addWidget(self.sessions_button)
-        footer_layout.addStretch()
-        
+
         self.analytics_button = QPushButton("Analytics")
         self.analytics_button.setFlat(True)
         self.analytics_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.analytics_button.setStyleSheet("color: #3498db; text-decoration: underline;")
         self.analytics_button.clicked.connect(self.open_analytics)
         footer_layout.addWidget(self.analytics_button)
+        
+        footer_layout.addStretch()
+
+        self.settings_button = QPushButton("Settings")
+        self.settings_button.setFlat(True)
+        self.settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.settings_button.setStyleSheet("color: #7f8c8d; text-decoration: underline;")
+        self.settings_button.clicked.connect(self.open_settings)
+        footer_layout.addWidget(self.settings_button)
 
         self.layout.addLayout(footer_layout)
         
@@ -188,11 +299,9 @@ class MainWindow(QMainWindow):
 
         # --- Tray Icon ---
         self.tray_icon = QSystemTrayIcon(self)
-        # Use a default system icon or fallback
         if os.path.exists("app/resources/icon.ico"):
             self.tray_icon.setIcon(QIcon("app/resources/icon.ico"))
         else:
-             # Fallback to standard icon if resource missing
              self.tray_icon.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon))
              
         tray_menu = QMenu()
@@ -208,47 +317,103 @@ class MainWindow(QMainWindow):
         self.tray_icon.show()
         self.tray_icon.activated.connect(self.tray_activated)
 
-        # --- Idle Detection ---
-        self.idle_detector = IdleDetector(threshold_minutes=5)
+        # --- Idle Loop ---
         self.idle_timer = QTimer(self)
         self.idle_timer.timeout.connect(self.check_idle)
-        self.idle_timer.start(5000) # Check every 5s
+        self.idle_timer.start(2000) # Check every 2s
         
         # --- Hotkeys ---
         try:
              self.setup_hotkeys()
         except Exception:
-             print("Failed to setup global hotkeys")
+             pass
 
         # Check for existing session
         if self.timer_logic.is_running():
             self.restore_ui_state()
 
     def setup_hotkeys(self):
-        # Global Hotkey Ctrl+Alt+S
-        # Note: pynput listener blocks if run in main thread, need non-blocking or separate thread
-        # QThread or simple listener
         self.hotkey_listener = keyboard.GlobalHotKeys({
             '<ctrl>+<alt>+s': self.on_hotkey_toggle
         })
         self.hotkey_listener.start()
         
     def on_hotkey_toggle(self):
-        # This runs in a separate thread, so use QMetaObject.invokeMethod or signals if modifying UI
-        # But start/stop logic mostly safe? Better to emit signal.
-        # For simplicity, we'll try direct call but wrap in try
-        # Actually PySide requires UI updates on main thread.
-        # We'll skip complex threading for MVP and hope python GIL handles it or use QTimer.singleShot
-        # But we can't easily cross threads without signals.
-        pass # Placeholder: need signal/slot mechanism for thread safety
+        # Thread safety note: strictly this should emit a signal
+        pass 
 
     def check_idle(self):
+        # Settings
+        enabled = self.storage.get_setting("idle_enabled", False)
+        if not enabled:
+            return
+
+        threshold_sec = self.storage.get_setting("idle_threshold", 5) * 60
+        warning_sec = self.storage.get_setting("idle_warning_sec", 30)
+        auto_resume = self.storage.get_setting("idle_auto_resume", True)
+        
+        idle_time = self.idle_detector.get_idle_time()
+
+        # Case 1: Timer is running, User becomes idle
         if self.timer_logic.is_running() and self.timer_logic.mode == 'countup':
-            idle_sec = self.idle_detector.get_idle_time()
-            if idle_sec > 300: # 5 mins
-                # Just flash status for now or simple log
-                self.status_label.setText(f"IDLE DETECTED ({int(idle_sec/60)}m)")
-                # Full auto-pause logic requires more state handling
+            if idle_time > threshold_sec:
+                if not self.idle_warning_active:
+                    self.show_idle_warning(warning_sec)
+
+        # Case 2: Auto-paused, User returns
+        if self.auto_paused and auto_resume:
+            # Active if idle time is very low (user moved mouse recently)
+            if idle_time < 2.0:
+                self.resume_from_auto_pause()
+                
+    def show_idle_warning(self, warning_sec):
+        self.idle_warning_active = True
+        self.warning_dialog = IdleWarningDialog(warning_sec, self)
+        
+        # Non-blocking exec? No, QDialog.exec() blocks.
+        # But we want the background timer to update.
+        # We also need to know if it rejected (timeout) or accepted (user click)
+        # However, checking 'idle' requires the main loop.
+        
+        # Strategy: Use exec(). It runs its own event loop, so our background timers (idle check)
+        # might still fire if they are on the main thread? Yes, QTimer fires in event loop.
+        
+        res = self.warning_dialog.exec()
+        
+        self.idle_warning_active = False
+        
+        if res == QDialog.Accepted:
+            # User clicked "I'm here"
+            # Do nothing, just continue
+            pass
+        else:
+            # Timeout (auto stop)
+            # OR user closed it manually? If closed manually, assume working.
+            if self.warning_dialog.remaining <= 0:
+                self.auto_stop_timer()
+
+    def auto_stop_timer(self):
+        self.stop_timer()
+        self.auto_paused = True
+        self.status_label.setText("AUTO-PAUSED (IDLE)")
+        self.tray_icon.showMessage("Timer Auto-Paused", "You were idle, so we stopped the timer.", QSystemTrayIcon.MessageIcon.Information)
+
+    def resume_from_auto_pause(self):
+        # Restart timer
+        # We need to preserve the project/comment
+        # But stop_timer cleared inputs. 
+        # Ideally, auto_stop should cache them or not clear them.
+        # For now, let's just start a new session with previous values if possible?
+        # Or better: don't clear inputs if auto-stopped.
+        
+        # NOTE: self.stop_timer() clears inputs. We should fix that.
+        
+        # Quick fix: Retrieve last session settings?
+        # Let's just start.
+        self.start_timer()
+        self.auto_paused = False
+        self.status_label.setText("RESUMED (AUTO)")
+        self.tray_icon.showMessage("Timer Resumed", "Welcome back! Timer started.", QSystemTrayIcon.MessageIcon.Information)
 
     def tray_activated(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
@@ -256,11 +421,9 @@ class MainWindow(QMainWindow):
             self.activateWindow()
 
     def closeEvent(self, event):
-        # Minimize to tray instead of close?
-        # User preference usually, but let's hide
         event.ignore()
         self.hide()
-        self.tray_icon.showMessage("WorkTrack Timer", "App minimized to tray. Double-click to open.", QSystemTrayIcon.MessageIcon.Information, 2000)
+        self.tray_icon.showMessage("OneStop-Worktimer", "App minimized to tray. Double-click to open.", QSystemTrayIcon.MessageIcon.Information, 2000)
 
     def reload_projects(self):
         current_data = self.project_combo.currentData()
@@ -273,16 +436,87 @@ class MainWindow(QMainWindow):
         idx = self.project_combo.findData(current_data)
         if idx >= 0:
             self.project_combo.setCurrentIndex(idx)
+            
+        self.reload_quick_start_buttons(projects)
 
-    def add_new_project(self):
-        dlg = ProjectDialog(self.storage, self)
-        if dlg.exec():
-            self.reload_projects()
+    def reload_quick_start_buttons(self, projects):
+        # Clear existing buttons
+        while self.quick_start_layout.count():
+            item = self.quick_start_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+                
+        if not projects:
+            lbl = QLabel("No projects added yet.")
+            lbl.setStyleSheet("color: #7f8c8d; font-style: italic;")
+            self.quick_start_layout.addWidget(lbl, 0, 0)
+            return
+            
+        row, col = 0, 0
+        max_cols = 3
+        for p in projects:
+            btn = QPushButton(f"▶ {p['name']}")
+            color = p.get('color') or '#3498db'
+            
+            # Calculate text color based on background luminance
+            try:
+                # Basic hex to rgb
+                h = color.lstrip('#')
+                if len(h) == 6:
+                    r, g, b = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+                    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                    text_color = "black" if luminance > 0.5 else "white"
+                else:
+                    text_color = "white"
+            except:
+                text_color = "white"
+                
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {color}; 
+                    color: {text_color}; 
+                    border-radius: 4px; 
+                    padding: 10px;
+                    font-weight: bold;
+                    text-align: left;
+                }}
+                QPushButton:hover {{
+                    background-color: {color}dd;
+                }}
+            """)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            
+            # Use a closure to capture the project id
+            btn.clicked.connect(lambda checked=False, pid=p['id']: self.quick_start_project(pid))
+            self.quick_start_layout.addWidget(btn, row, col)
+            
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
+            
+    def quick_start_project(self, project_id):
+        if self.timer_logic.is_running():
+            QMessageBox.warning(self, "Timer Running", "Please stop the current timer first.")
+            return
+            
+        # Set project combo
+        idx = self.project_combo.findData(project_id)
+        if idx >= 0:
+            self.project_combo.setCurrentIndex(idx)
+            
+        # Start timer
+        self.start_timer()
+
+    def manage_projects(self):
+        dlg = ManageProjectsDialog(self.storage, self)
+        dlg.exec()
+        self.reload_projects()
 
     def toggle_mode_ui(self):
         is_countdown = self.radio_countdown.isChecked()
         self.countdown_input.setVisible(is_countdown)
-        # Update display if not running
         if not self.timer_logic.is_running():
             if is_countdown:
                 self.time_label.setText(self.countdown_input.time().toString("HH:mm:ss"))
@@ -291,14 +525,15 @@ class MainWindow(QMainWindow):
 
     def update_display(self):
         if self.timer_logic.is_running():
+            # Calculate elapsed time for smart reminders
+            elapsed = self.timer_logic.get_elapsed()
+            elapsed_seconds = int(elapsed.total_seconds())
+            
             if self.timer_logic.mode == 'countdown' and self.timer_logic.target_duration:
                 remaining = self.timer_logic.get_remaining()
-                # Handle overtime (negative remaining)
                 total_seconds = int(remaining.total_seconds())
-                
                 is_overtime = total_seconds < 0
                 abs_seconds = abs(total_seconds)
-                
                 h = abs_seconds // 3600
                 m = (abs_seconds % 3600) // 60
                 s = abs_seconds % 60
@@ -313,33 +548,70 @@ class MainWindow(QMainWindow):
                     self.time_label.setStyleSheet("font-size: 64px; font-weight: bold; color: #2c3e50; font-family: 'Consolas', monospace;")
                     self.status_label.setText("COUNTDOWN")
 
-                # Check for completion (approx 0)
                 if total_seconds <= 0 and not self.countdown_notified and not is_overtime:
-                    # Notify once when hitting 0
                     self.trigger_notification()
                     self.countdown_notified = True
-
             else:
-                # Count Up
-                elapsed = self.timer_logic.get_elapsed()
-                total_seconds = int(elapsed.total_seconds())
+                total_seconds = elapsed_seconds
                 h = total_seconds // 3600
                 m = (total_seconds % 3600) // 60
                 s = total_seconds % 60
                 self.time_label.setText(f"{h:02}:{m:02}:{s:02}")
-                # Don't overwrite IDLE status if detected
-                if "IDLE" not in self.status_label.text():
-                    self.status_label.setText("RUNNING")
+                
+                if "PAUSED" not in self.status_label.text():
+                     self.status_label.setText("RUNNING")
+                
                 self.time_label.setStyleSheet("font-size: 64px; font-weight: bold; color: #2c3e50; font-family: 'Consolas', monospace;")
+                
+            # Check for smart reminder (based on elapsed time, not remaining time)
+            if self.next_reminder_sec > 0 and elapsed_seconds >= self.next_reminder_sec and not self.smart_reminder_active:
+                self.show_smart_reminder(elapsed_seconds)
         else:
-            # Not running
             if self.radio_countdown.isChecked():
                 pass
-            else:
-                pass
+
+    def show_smart_reminder(self, total_seconds):
+        self.smart_reminder_active = True
+        winsound.Beep(1000, 500)
+        self.activateWindow()
+        
+        worked_minutes = total_seconds // 60
+        dlg = SmartReminderDialog(worked_minutes, self)
+        
+        # We don't want to block the timer updates entirely, but QDialog.exec() runs its own event loop
+        # so QTimer will still fire.
+        dlg.exec()
+        
+        action = dlg.action
+        self.smart_reminder_active = False
+        
+        smart_interval = int(self.storage.get_setting("smart_interval", 50))
+        
+        if action == "break":
+            # Stop current timer
+            self.stop_timer()
+            # Start a 5 min countdown
+            self.radio_countdown.setChecked(True)
+            self.countdown_input.setTime(QTime(0, 5, 0))
+            # Set project to none, comment to break
+            self.project_combo.setCurrentIndex(0)
+            self.comment_input.setText("Coffee Break ☕")
+            self.start_timer()
+            
+        elif action == "switch":
+            self.stop_timer()
+            self.manage_projects() # Just open project manager or let them pick from UI
+            # They can manually start again
+            
+        elif action == "stop":
+            self.stop_timer()
+            
+        elif action == "continue" or action is None:
+            # Just bump the next reminder time
+            self.next_reminder_sec += smart_interval * 60
 
     def trigger_notification(self):
-        winsound.Beep(1000, 500) # Frequency, Duration
+        winsound.Beep(1000, 500)
         self.activateWindow()
         self.tray_icon.showMessage("Timer Finished", "Your countdown has reached zero!", QSystemTrayIcon.MessageIcon.Information)
 
@@ -367,6 +639,16 @@ class MainWindow(QMainWindow):
             self.radio_countdown.setEnabled(False)
             self.countdown_input.setEnabled(False)
             self.countdown_notified = False
+            self.auto_paused = False # Reset flag
+            
+            # Setup smart reminders
+            smart_enabled = self.storage.get_setting("smart_enabled", True)
+            smart_interval = self.storage.get_setting("smart_interval", 50)
+            if smart_enabled:
+                self.next_reminder_sec = int(smart_interval) * 60
+            else:
+                self.next_reminder_sec = 0
+                
             self.status_label.setText("STARTED")
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
@@ -384,9 +666,26 @@ class MainWindow(QMainWindow):
         self.radio_countdown.setEnabled(True)
         self.countdown_input.setEnabled(True)
         
-        self.comment_input.clear()
+        # Only clear inputs if NOT auto-paused
+        # But wait, stop_timer IS called by auto_stop.
+        # We need to distinguish or just not clear inputs generally?
+        # User preference usually is to clear.
+        # But for auto-resume, we want them back.
+        # Let's save them if auto-pausing.
         
-        # Reset display
+        # If this call is coming from button click, self.auto_paused is False/True depending on state.
+        # Actually, let's just NOT clear inputs on stop. The user can clear them if they want, 
+        # or we clear them on START of next session?
+        # Let's clear on stop only if manual.
+        
+        # Hack: Check if we are inside auto_stop logic?
+        # Better: modify stop_timer signature or check caller.
+        # Simplest: Just don't clear inputs here. Clear them when 'Start' is clicked? 
+        # No, 'Start' reads them.
+        
+        # Let's just keep inputs for now. Frictionless means remembering context usually.
+        # self.comment_input.clear() 
+        
         if self.radio_countup.isChecked():
             self.time_label.setText("00:00:00")
         else:
@@ -396,7 +695,6 @@ class MainWindow(QMainWindow):
         self.time_label.setStyleSheet("font-size: 64px; font-weight: bold; color: #2c3e50; font-family: 'Consolas', monospace;")
 
     def restore_ui_state(self):
-        # Called if session was already running
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
         self.radio_countup.setEnabled(False)
@@ -430,6 +728,10 @@ class MainWindow(QMainWindow):
         from app.ui.analytics_window import AnalyticsWindow
         self.analytics_window = AnalyticsWindow(self.storage, self)
         self.analytics_window.show()
+
+    def open_settings(self):
+        dlg = SettingsDialog(self.storage, self)
+        dlg.exec()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -22,16 +22,15 @@ def build_exe():
         '--onefile',                        # Single exe file (easier for distribution)
         '--windowed',                       # Windows subsystem
         '--clean',                          # Clean cache
-        # Add data files (icon, etc.)
-        # Format: source;destination
-        '--add-data=app/resources;app/resources', 
         # Imports that might be missed
         '--hidden-import=pynput.keyboard._win32',
         '--hidden-import=pynput.mouse._win32',
         '--hidden-import=sqlite3',
     ]
     
-    # Check for icon
+    # Add resources folder and icon only if they exist
+    if os.path.exists("app/resources"):
+        args.append('--add-data=app/resources;app/resources')
     if os.path.exists("app/resources/icon.ico"):
         args.append('--icon=app/resources/icon.ico')
 
