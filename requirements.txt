@@ -1,6 +1,8 @@
-PySide6
+pywebview
+pystray
+pillow
+pythonnet
 openpyxl
 pandas
-matplotlib
 pynput
 pyinstaller

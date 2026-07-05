@@ -1,0 +1,97 @@
+:root {
+  /* Surfaces */
+  --bg-0: #0a0e18;
+  --bg-1: #0d1220;
+  --bg-2: #121a2e;
+  --glass: rgba(255, 255, 255, 0.045);
+  --glass-strong: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Text */
+  --text-0: #f4f6fb;
+  --text-1: #c4cbdb;
+  --text-2: #8b93a7;
+  --text-3: #5c6478;
+
+  /* Accents */
+  --accent-run-1: #10e0a2;
+  --accent-run-2: #06b6d4;
+  --accent-count-1: #8b5cf6;
+  --accent-count-2: #3b82f6;
+  --accent-danger-1: #ff5d5d;
+  --accent-danger-2: #f97316;
+  --accent-gold-1: #fbbf24;
+  --accent-gold-2: #f59e0b;
+
+  --grad-run: linear-gradient(135deg, var(--accent-run-1), var(--accent-run-2));
+  --grad-count: linear-gradient(135deg, var(--accent-count-1), var(--accent-count-2));
+  --grad-danger: linear-gradient(135deg, var(--accent-danger-1), var(--accent-danger-2));
+  --grad-gold: linear-gradient(135deg, var(--accent-gold-1), var(--accent-gold-2));
+  --grad-bg: radial-gradient(120% 120% at 15% -10%, #16213f 0%, transparent 55%),
+             radial-gradient(120% 120% at 100% 0%, #1c1436 0%, transparent 45%),
+             radial-gradient(120% 130% at 50% 120%, #072230 0%, transparent 55%),
+             var(--bg-0);
+
+  /* Project palette (quick-pick swatches) */
+  --swatch-1: #10e0a2;
+  --swatch-2: #3b82f6;
+  --swatch-3: #8b5cf6;
+  --swatch-4: #ec4899;
+  --swatch-5: #f59e0b;
+  --swatch-6: #ff5d5d;
+  --swatch-7: #06b6d4;
+  --swatch-8: #84cc16;
+  --swatch-9: #f97316;
+  --swatch-10: #6366f1;
+  --swatch-11: #14b8a6;
+  --swatch-12: #e11d48;
+
+  /* Radii & spacing */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur-med: 260ms;
+  --dur-slow: 480ms;
+
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.5);
+
+  --titlebar-h: 44px;
+  --sidebar-w: 74px;
+}
+
+[data-theme="light"] {
+  --bg-0: #eef1f8;
+  --bg-1: #f4f6fb;
+  --bg-2: #ffffff;
+  --glass: rgba(255, 255, 255, 0.65);
+  --glass-strong: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-border-strong: rgba(15, 23, 42, 0.14);
+
+  --text-0: #171b2b;
+  --text-1: #3c4457;
+  --text-2: #707a92;
+  --text-3: #9aa3b8;
+
+  --grad-bg: radial-gradient(120% 120% at 15% -10%, #dbe4ff 0%, transparent 55%),
+             radial-gradient(120% 120% at 100% 0%, #ffe0f1 0%, transparent 45%),
+             radial-gradient(120% 130% at 50% 120%, #d7fff1 0%, transparent 55%),
+             var(--bg-0);
+
+  --shadow-card: 0 8px 28px rgba(30, 41, 59, 0.1);
+  --shadow-pop: 0 20px 50px rgba(30, 41, 59, 0.18);
+}

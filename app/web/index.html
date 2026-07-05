@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>OneStop-Worktimer</title>
+<link rel="stylesheet" href="css/tokens.css" />
+<link rel="stylesheet" href="css/base.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/animations.css" />
+</head>
+<body>
+
+<svg id="icon-sprite" class="hidden" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<div class="app-window" id="app-shell">
+
+  <!-- Custom titlebar -->
+  <div id="titlebar">
+    <div class="brand"><span class="dot"></span> OneStop-Worktimer</div>
+    <div class="titlebar-spacer"></div>
+    <button class="win-btn" id="btn-compact" title="Compact mode" data-icon="minimize-2"></button>
+    <button class="win-btn" id="btn-tray" title="Minimize to tray" data-icon="minus"></button>
+    <button class="win-btn close" id="btn-quit" title="Close" data-icon="x"></button>
+  </div>
+
+  <div id="body-row">
+    <!-- Sidebar navigation -->
+    <nav id="sidebar">
+      <button class="nav-btn active" data-view="dashboard" data-icon="home"><span class="nav-tip">Timer</span></button>
+      <button class="nav-btn" data-view="sessions" data-icon="list"><span class="nav-tip">History</span></button>
+      <button class="nav-btn" data-view="calendar" data-icon="calendar"><span class="nav-tip">Calendar</span></button>
+      <button class="nav-btn" data-view="analytics" data-icon="bar-chart"><span class="nav-tip">Analytics</span></button>
+      <button class="nav-btn" data-view="projects" data-icon="folder"><span class="nav-tip">Projects</span></button>
+      <div class="sidebar-spacer"></div>
+      <button class="nav-btn" data-view="settings" data-icon="settings"><span class="nav-tip">Settings</span></button>
+    </nav>
+
+    <main id="main-area">
+
+      <!-- ===================== DASHBOARD / TIMER ===================== -->
+      <section class="view active" id="view-dashboard">
+        <div class="view-header">
+          <div>
+            <h1 id="dashboard-greeting">Ready when you are</h1>
+            <div class="view-sub" id="dashboard-date"></div>
+          </div>
+          <div class="streak-badge" id="streak-badge">
+            <span data-icon="flame"></span>
+            <span id="streak-count">0</span>
+            <span class="streak-label">day streak</span>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="glass-card timer-card">
+            <div class="mode-switch" id="mode-switch">
+              <button class="mode-btn active" data-mode="countup">Count Up</button>
+              <button class="mode-btn" data-mode="countdown">Countdown</button>
+              <span class="mode-thumb"></span>
+            </div>
+
+            <div class="countdown-picker hidden" id="countdown-picker">
+              <button class="chip" data-min="15">15m</button>
+              <button class="chip" data-min="25">25m</button>
+              <button class="chip" data-min="45">45m</button>
+              <button class="chip" data-min="60">60m</button>
+              <input type="number" id="countdown-custom" min="1" max="600" placeholder="min" />
+            </div>
+
+            <div class="ring-wrap" id="ring-wrap">
+              <svg viewBox="0 0 240 240" width="240" height="240" id="timer-ring-svg">
+                <circle class="ring-track" cx="120" cy="120" r="104"></circle>
+                <circle class="ring-progress" id="ring-progress" cx="120" cy="120" r="104"></circle>
+              </svg>
+              <div class="ring-center">
+                <div class="ring-time" id="ring-time">00:00:00</div>
+                <div class="ring-status" id="ring-status">READY</div>
+              </div>
+            </div>
+
+            <div class="session-fields">
+              <div class="project-picker" id="project-picker">
+                <!-- project chips injected here -->
+              </div>
+              <div class="comment-row">
+                <input type="text" id="comment-input" placeholder="What are you working on? (optional)" maxlength="200" />
+              </div>
+              <div class="quick-comments" id="quick-comments"><!-- preset chips injected --></div>
+            </div>
+
+            <button class="btn-hero" id="btn-timer-toggle">
+              <span data-icon="play"></span>
+              <span id="btn-timer-toggle-label">Start</span>
+            </button>
+          </div>
+
+          <div class="dashboard-side" id="dashboard-secondary">
+            <div class="glass-card week-glance-card">
+              <div class="card-title-row">
+                <div class="card-title">This week</div>
+                <button class="btn-link" id="btn-week-calendar">Calendar</button>
+              </div>
+              <div class="week-glance-strip" id="week-glance-strip"></div>
+            </div>
+
+            <div class="glass-card quickstart-card">
+              <div class="card-title">Quick start</div>
+              <div class="quickstart-grid" id="quickstart-grid"></div>
+            </div>
+
+            <div class="kpi-grid" id="kpi-grid">
+              <div class="kpi-card" data-kpi="today"><div class="kpi-label">Today</div><div class="kpi-value">0 h</div></div>
+              <div class="kpi-card" data-kpi="week"><div class="kpi-label">This Week</div><div class="kpi-value">0 h</div></div>
+              <div class="kpi-card" data-kpi="month"><div class="kpi-label">This Month</div><div class="kpi-value">0 h</div></div>
+              <div class="kpi-card" data-kpi="all_time"><div class="kpi-label">All Time</div><div class="kpi-value">0 h</div></div>
+            </div>
+
+            <div class="glass-card goals-card" id="goals-card">
+              <div class="card-title-row">
+                <div class="card-title">Goals</div>
+                <button class="btn-link" id="btn-manage-goals">Manage</button>
+              </div>
+              <div class="goals-list" id="goals-list"><div class="empty-hint">No goals yet - set one to track progress.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== SESSIONS ===================== -->
+      <section class="view" id="view-sessions">
+        <div class="view-header">
+          <div><h1>History</h1><div class="view-sub">Browse, search and edit your logged sessions</div></div>
+          <div class="header-actions">
+            <button class="btn-secondary" id="btn-export-csv"><span data-icon="download"></span> CSV</button>
+            <button class="btn-secondary" id="btn-export-excel"><span data-icon="download"></span> Excel</button>
+            <button class="btn-primary" id="btn-add-session"><span data-icon="plus"></span> Add session</button>
+          </div>
+        </div>
+
+        <div class="glass-card filter-bar">
+          <input type="date" id="filter-date-from" />
+          <span class="filter-sep">to</span>
+          <input type="date" id="filter-date-to" />
+          <input type="search" id="filter-search" placeholder="Search comments or projects..." />
+        </div>
+
+        <div class="sessions-list" id="sessions-list"></div>
+      </section>
+
+      <!-- ===================== CALENDAR ===================== -->
+      <section class="view" id="view-calendar">
+        <div class="view-header">
+          <div><h1>Calendar</h1><div class="view-sub">Days tinted by project — multiple projects split proportionally</div></div>
+          <div class="header-actions calendar-nav">
+            <button class="btn-icon" id="btn-cal-prev" data-icon="chevron-left"></button>
+            <div class="cal-month-label" id="cal-month-label"></div>
+            <button class="btn-icon" id="btn-cal-next" data-icon="chevron-right"></button>
+            <button class="btn-secondary btn-sm" id="btn-cal-today">Today</button>
+          </div>
+        </div>
+
+        <div class="calendar-layout">
+          <div class="glass-card calendar-card">
+            <div class="calendar-weekdays">
+              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+            <div class="cal-legend" id="cal-legend"></div>
+          </div>
+
+          <div class="glass-card day-panel" id="day-panel">
+            <div class="card-title-row">
+              <div class="card-title" id="day-panel-title">Select a day</div>
+              <button class="btn-secondary btn-sm" id="btn-day-add"><span data-icon="plus"></span> Add</button>
+            </div>
+            <div class="day-sessions" id="day-sessions"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== ANALYTICS ===================== -->
+      <section class="view" id="view-analytics">
+        <div class="view-header">
+          <div><h1>Analytics</h1><div class="view-sub">Trends, charts and summaries</div></div>
+          <select class="select-range" id="analytics-range">
+            <option value="7">Last 7 days</option>
+            <option value="14" selected>Last 14 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
+
+        <div class="glass-card range-summary" id="range-summary"></div>
+
+        <div class="analytics-grid">
+          <div class="glass-card chart-card">
+            <div class="card-title">Hours worked</div>
+            <canvas id="chart-hours" height="220"></canvas>
+          </div>
+          <div class="glass-card chart-card chart-card-sm">
+            <div class="card-title">Top projects</div>
+            <canvas id="chart-projects" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="analytics-grid analytics-grid-secondary">
+          <div class="glass-card chart-card">
+            <div class="card-title">When you work</div>
+            <div class="chart-sub">Hours by time of day (session start)</div>
+            <canvas id="chart-timeofday" height="180"></canvas>
+          </div>
+          <div class="glass-card chart-card">
+            <div class="card-title">Busy days</div>
+            <div class="chart-sub">Total hours by weekday</div>
+            <canvas id="chart-weekday" height="180"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card heatmap-card">
+          <div class="card-title-row">
+            <div class="card-title">Contribution heatmap</div>
+            <div class="view-sub">Last 12 months</div>
+          </div>
+          <div class="heatmap-scroll"><div class="heatmap-grid" id="heatmap-grid"></div></div>
+        </div>
+      </section>
+
+      <!-- ===================== PROJECTS ===================== -->
+      <section class="view" id="view-projects">
+        <div class="view-header">
+          <div><h1>Projects</h1><div class="view-sub">Organize your work with colors</div></div>
+          <button class="btn-primary" id="btn-add-project"><span data-icon="plus"></span> New project</button>
+        </div>
+        <div class="projects-grid" id="projects-grid"></div>
+      </section>
+
+      <!-- ===================== SETTINGS ===================== -->
+      <section class="view" id="view-settings">
+        <div class="view-header">
+          <div><h1>Settings</h1><div class="view-sub">Tune the app to how you work</div></div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="glass-card settings-section">
+            <div class="card-title">Appearance</div>
+            <div class="setting-row">
+              <div><div class="setting-label">Theme</div><div class="setting-desc">Dark or light interface.</div></div>
+              <div class="theme-switch" id="theme-switch">
+                <button class="theme-opt active" data-theme="dark" data-icon="moon"></button>
+                <button class="theme-opt" data-theme="light" data-icon="sun"></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card settings-section">
+            <div class="card-title">Idle detection</div>
+            <div class="setting-row">
+              <div><div class="setting-label">Enable idle detection</div><div class="setting-desc">Warns you if you've stepped away while the timer runs.</div></div>
+              <label class="switch"><input type="checkbox" id="setting-idle-enabled" /><span class="switch-track"></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Idle threshold</div><div class="setting-desc">Minutes of inactivity before warning.</div></div>
+              <input type="number" class="input-num" id="setting-idle-threshold" min="1" max="120" />
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Warning timeout</div><div class="setting-desc">Seconds to respond before auto-pausing.</div></div>
+              <input type="number" class="input-num" id="setting-idle-warning" min="10" max="300" />
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Auto-resume</div><div class="setting-desc">Restart automatically once you're back.</div></div>
+              <label class="switch"><input type="checkbox" id="setting-idle-autoresume" /><span class="switch-track"></span></label>
+            </div>
+          </div>
+
+          <div class="glass-card settings-section">
+            <div class="card-title">Smart reminders</div>
+            <div class="setting-row">
+              <div><div class="setting-label">Enable smart reminders</div><div class="setting-desc">Nudges to take a break after a long stretch.</div></div>
+              <label class="switch"><input type="checkbox" id="setting-smart-enabled" /><span class="switch-track"></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Reminder interval</div><div class="setting-desc">Minutes of continuous work between reminders.</div></div>
+              <input type="number" class="input-num" id="setting-smart-interval" min="10" max="240" />
+            </div>
+          </div>
+
+          <div class="glass-card settings-section">
+            <div class="card-title">Quick comment presets</div>
+            <div class="setting-desc" style="margin-bottom:10px">Shown as one-tap chips under the comment box.</div>
+            <div class="preset-chip-editor" id="preset-chip-editor"></div>
+            <div class="preset-add-row">
+              <input type="text" id="preset-new-input" placeholder="Add a preset..." maxlength="40" />
+              <button class="btn-secondary btn-sm" id="btn-preset-add">Add</button>
+            </div>
+          </div>
+
+          <div class="glass-card settings-section">
+            <div class="card-title">Global hotkey</div>
+            <div class="setting-row">
+              <div><div class="setting-label">Start / stop from anywhere</div><div class="setting-desc"><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd> toggles the timer, even when the window isn't focused.</div></div>
+              <label class="switch"><input type="checkbox" id="setting-hotkey-enabled" /><span class="switch-track"></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Command palette</div><div class="setting-desc">Open quick actions from anywhere in the app.</div></div>
+              <kbd>Ctrl</kbd> + <kbd>K</kbd>
+            </div>
+          </div>
+
+          <div class="glass-card settings-section">
+            <div class="card-title">Data &amp; backup</div>
+            <div class="db-info" id="db-info"></div>
+            <div class="settings-btn-row">
+              <button class="btn-secondary btn-sm" id="btn-open-data-folder"><span data-icon="folder"></span> Open folder</button>
+              <button class="btn-secondary btn-sm" id="btn-backup-now"><span data-icon="shield"></span> Backup now</button>
+              <button class="btn-secondary btn-sm" id="btn-restore-backup"><span data-icon="upload"></span> Restore...</button>
+              <button class="btn-secondary btn-sm" id="btn-export-full"><span data-icon="download"></span> Export everything</button>
+            </div>
+            <div class="backups-list" id="backups-list"></div>
+            <div class="setting-desc" style="margin-top:8px;">Migrations only add schema; rotating backups are created on each launch and on demand.</div>
+          </div>
+
+          <div class="glass-card settings-section">
+            <div class="card-title">About</div>
+            <div class="setting-desc">OneStop-Worktimer - offline, local-first work session tracker. No cloud, no telemetry.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ===================== Overlays: modal / toasts / command palette / reminders ===================== -->
+<div class="modal-backdrop hidden" id="modal-backdrop">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<div class="cmdk-backdrop hidden" id="cmdk-backdrop">
+  <div class="cmdk-box">
+    <div class="cmdk-input-row">
+      <span data-icon="search"></span>
+      <input type="text" id="cmdk-input" placeholder="Type a command..." autocomplete="off" />
+      <kbd>Esc</kbd>
+    </div>
+    <div class="cmdk-results" id="cmdk-results"></div>
+  </div>
+</div>
+
+<div class="overlay-backdrop hidden" id="idle-overlay">
+  <div class="overlay-box">
+    <div class="overlay-icon" data-icon="coffee"></div>
+    <div class="overlay-title">Still working?</div>
+    <div class="overlay-text" id="idle-overlay-text">No activity detected. Pausing timer in <span id="idle-countdown">30</span>s.</div>
+    <button class="btn-hero btn-hero-sm" id="btn-idle-here">I'm still here</button>
+  </div>
+</div>
+
+<div class="overlay-backdrop hidden" id="smart-overlay">
+  <div class="overlay-box">
+    <div class="overlay-icon" data-icon="zap"></div>
+    <div class="overlay-title" id="smart-overlay-title">You've been at it for a while</div>
+    <div class="overlay-text" id="smart-overlay-text"></div>
+    <div class="overlay-btn-grid">
+      <button class="btn-overlay" data-action="break"><span data-icon="coffee"></span> 5 min break</button>
+      <button class="btn-overlay" data-action="switch"><span data-icon="shuffle"></span> Switch task</button>
+      <button class="btn-overlay" data-action="continue"><span data-icon="play"></span> Keep going</button>
+      <button class="btn-overlay danger" data-action="stop"><span data-icon="square"></span> Stop timer</button>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/commandPalette.js"></script>
+<script src="js/timerRing.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/sessions.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/projects.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

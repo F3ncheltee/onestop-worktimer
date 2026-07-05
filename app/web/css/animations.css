@@ -1,0 +1,80 @@
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.92) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes popOut {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.94) translateY(6px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes ringPulseRun {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(16, 224, 162, 0.55)); }
+  50% { filter: drop-shadow(0 0 20px rgba(16, 224, 162, 0.85)); }
+}
+@keyframes ringPulseCount {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.5)); }
+  50% { filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.8)); }
+}
+@keyframes ringPulseDanger {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 93, 93, 0.6)); }
+  50% { filter: drop-shadow(0 0 26px rgba(255, 93, 93, 0.95)); }
+}
+
+@keyframes softBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(24px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(140px) rotate(320deg); opacity: 0; }
+}
+
+@keyframes flamePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pressDown {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+.pressable:active {
+  animation: pressDown 180ms var(--ease-out);
+}

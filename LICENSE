@@ -1,0 +1,80 @@
+OneStop-Worktimer License Agreement
+====================================
+
+Copyright (c) 2026 F3ncheltee. All rights reserved.
+
+This software ("OneStop-Worktimer") is licensed, not sold. By downloading,
+installing, or using this software, you agree to the terms below.
+
+
+1. PERSONAL USE (FREE)
+----------------------
+
+You may use, install, and run OneStop-Worktimer at no charge for
+**Personal Use**.
+
+"Personal Use" means use by an individual for their own private purposes,
+where the software is not used in connection with any business, employment,
+freelance client work, or other activity intended to generate income.
+
+
+2. COMMERCIAL USE (PAID LICENSE REQUIRED)
+-----------------------------------------
+
+Any use that is not Personal Use is **Commercial Use**.
+
+Commercial Use includes, without limitation:
+
+  - Use by a company, organization, government body, or other legal entity
+  - Use by an employee, contractor, or volunteer while performing work for
+    an organization (even if the software is installed on a personal device)
+  - Use in connection with providing services to clients or customers
+  - Use where time tracked is billed, reported, or used for payroll,
+    invoicing, compliance, or workforce management
+  - Hosting, redistributing, or offering the software to others as part of
+    a product or service
+
+Commercial Use requires a separate **Commercial License** purchased from
+the copyright holder. Contact the repository owner or visit the project
+releases page for licensing options.
+
+
+3. RESTRICTIONS (ALL USERS)
+---------------------------
+
+Unless you hold a valid Commercial License that explicitly allows it, you
+may not:
+
+  - Sell, sublicense, rent, lease, or distribute the software or any
+    derivative work
+  - Remove or alter copyright or license notices
+  - Reverse engineer, decompile, or disassemble the software except where
+    applicable law expressly permits
+
+You may make backup copies for your own use.
+
+
+4. OPEN SOURCE COMPONENTS
+-------------------------
+
+This application may include third-party open-source components (for
+example Chart.js), each subject to its own license. Those licenses apply
+only to their respective components.
+
+
+5. DISCLAIMER
+-------------
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM USE OF THE SOFTWARE.
+
+
+6. CONTACT
+----------
+
+For Commercial Licenses, volume licensing, or questions:
+
+  GitHub: https://github.com/F3ncheltee/onestop-worktimer

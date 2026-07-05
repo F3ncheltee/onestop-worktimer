@@ -1,0 +1,266 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  background: var(--grad-bg);
+  color: var(--text-0);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+body.compact-mode #app-shell {
+  border-radius: var(--r-lg);
+}
+
+::selection {
+  background: rgba(16, 224, 162, 0.35);
+}
+
+input, textarea, button {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+input[type="text"], input[type="number"], input[type="search"], textarea {
+  user-select: text;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border-strong);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+svg {
+  display: block;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.app-window {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- Custom titlebar --- */
+#titlebar {
+  height: var(--titlebar-h);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-2) 0 var(--sp-4);
+  gap: var(--sp-2);
+  -webkit-app-region: drag;
+  background: rgba(0,0,0,0.12);
+  border-bottom: 1px solid var(--glass-border);
+}
+[data-theme="light"] #titlebar {
+  background: rgba(255,255,255,0.35);
+}
+
+#titlebar .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  color: var(--text-1);
+}
+#titlebar .brand .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--grad-run);
+  box-shadow: 0 0 10px rgba(16, 224, 162, 0.7);
+}
+
+#titlebar .titlebar-spacer {
+  flex: 1;
+}
+
+#titlebar .win-btn {
+  -webkit-app-region: no-drag;
+  width: 32px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast);
+}
+#titlebar .win-btn:hover {
+  background: var(--glass-strong);
+  color: var(--text-0);
+}
+#titlebar .win-btn.close:hover {
+  background: var(--accent-danger-1);
+  color: white;
+}
+#titlebar .win-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* --- Layout: sidebar + main --- */
+#body-row {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+#sidebar {
+  width: var(--sidebar-w);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-4) 0;
+  gap: var(--sp-2);
+  border-right: 1px solid var(--glass-border);
+}
+
+.nav-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-md);
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast), transform var(--dur-fast);
+}
+.nav-btn svg { width: 21px; height: 21px; }
+.nav-btn:hover {
+  background: var(--glass);
+  color: var(--text-0);
+  transform: translateY(-1px);
+}
+.nav-btn.active {
+  background: var(--glass-strong);
+  color: var(--text-0);
+}
+.nav-btn.active::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--grad-run);
+}
+.nav-btn .nav-tip {
+  position: absolute;
+  left: 58px;
+  white-space: nowrap;
+  background: #0b0f1a;
+  color: #fff;
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition: opacity var(--dur-fast), transform var(--dur-fast);
+  z-index: 50;
+  box-shadow: var(--shadow-card);
+}
+.nav-btn:hover .nav-tip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+#sidebar .sidebar-spacer { flex: 1; }
+
+#main-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--sp-5) var(--sp-6) var(--sp-6);
+  position: relative;
+}
+
+.view {
+  display: none;
+  animation: viewIn var(--dur-med) var(--ease-out);
+}
+.view.active {
+  display: block;
+}
+
+.view-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--sp-5);
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.view-header h1 {
+  font-size: 22px;
+  font-weight: 650;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+.view-header .view-sub {
+  color: var(--text-2);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* Compact mode: hide everything except the mini timer */
+body.compact-mode #sidebar,
+body.compact-mode #titlebar .brand,
+body.compact-mode #main-area .view-header,
+body.compact-mode #dashboard-secondary {
+  display: none !important;
+}
+body.compact-mode #main-area {
+  padding: var(--sp-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.compact-mode #body-row {
+  align-items: center;
+}

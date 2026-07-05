@@ -1,49 +1,65 @@
 # OneStop-Worktimer
 
-A simple, offline-only desktop timer for tracking work sessions, designed for friction-free productivity.
+Offline desktop timer for tracking work sessions. Projects, analytics, calendar, goals, and exports — all stored locally in SQLite. No account, no cloud, no telemetry.
 
-## Features
+![Dashboard](docs/screenshots/dashboard.png)
 
-- **Start/Stop Timer**: Single click to start and stop sessions.
-- **Countdown Mode**: Set a target time and get notified when it ends (supports overtime tracking).
-- **Analytics**: Visual overview of your work hours (Today, Week, Month, and 14-day history chart).
-- **Projects**: Tag sessions with projects for better organization.
-- **History & Export**: View past sessions, filter by date/search, edit/add past sessions, and export to CSV/Excel.
-- **Offline Storage**: All data is stored locally in `worktrack.db` (SQLite), created in the same folder as the app when you first run it—one database per user/machine. No cloud, no telemetry.
-- **System Tray**: Minimized app stays in the system tray.
-- **Idle Detection**: Warns you if you've been away for more than 5 minutes.
+## Highlights
 
-## Installation (For Users)
+- **Timer** — count-up or countdown, animated ring, project tags, quick comments, global hotkey (`Ctrl+Alt+S`)
+- **Dashboard** — week-at-a-glance strip, KPIs, goals, streaks, one-tap project start
+- **History** — search, filter, edit, delete; export to CSV or Excel
+- **Calendar** — month grid tinted by project color; multi-project days split proportionally
+- **Analytics** — hours over time, project breakdown, time-of-day and weekday charts, activity heatmap
+- **Data** — automatic rotating backups, manual backup/restore, full JSON export
 
-**Option A: Single Executable (Recommended for quick install)**
-1.  **Download**: Get `WorkTrackTimer.exe` from the [Releases](https://github.com/F3ncheltee/onestop-worktimer/releases) page on GitHub (or build it yourself—see *Building the Executable* below).
-2.  **Install**: No installation required! Place the file anywhere (e.g., Desktop or Documents).
-3.  **Run**: Double-click `WorkTrackTimer.exe`. A `worktrack.db` file will be created in the same folder for your sessions.
-4.  **Uninstall**: Delete the `.exe` and the `worktrack.db` file in that folder.
+![Analytics](docs/screenshots/analytics.png)
 
-**Option B: Python Source**
-1.  Ensure Python 3.8+ is installed.
-2.  Clone this repository.
-3.  Install dependencies: `pip install -r requirements.txt`
-4.  Run via: `python -m app.main`
+## Download
 
-## Building the Executable
+Grab **WorkTrackTimer.exe** from [Releases](https://github.com/F3ncheltee/onestop-worktimer/releases). No installer — place the file anywhere and run it. A `worktrack.db` file is created next to the executable on first launch.
 
-If you want to build the `.exe` file yourself (e.g., after modifying the code):
+## Run from source
 
-1.  Open the project folder in a terminal.
-2.  Run the build batch file:
-    ```cmd
-    build_and_package.bat
-    ```
-3.  Once finished, the new `WorkTrackTimer.exe` will appear in the `dist/` folder.
+Requirements: **Windows 10/11**, **Python 3.10+**, **Edge WebView2** (preinstalled on current Windows).
+
+```powershell
+git clone https://github.com/F3ncheltee/onestop-worktimer.git
+cd onestop-worktimer
+pip install -r requirements.txt
+python -m app.main
+```
+
+## Build executable
+
+```powershell
+python build_exe.py
+```
+
+Output: `dist/WorkTrackTimer.exe`. If `dist/worktrack.db` already exists, the build script preserves it across rebuilds.
 
 ## Usage
 
-*   **Start/Stop**: Click **START** to begin tracking. Click **STOP** to finish.
-*   **Projects**: Use the dropdown to select a project, or click `+` to add a new one.
-*   **Countdown**: Toggle "Countdown" mode to set a timer (e.g., 45 minutes).
-*   **History**: Click "View History / Export" to see past sessions, edit mistakes, or export data to Excel/CSV.
-*   **Analytics**: Click "Analytics" to see charts of your progress.
-*   **Minimize**: Closing the window minimizes the app to the System Tray. Double-click the tray icon to restore it.
-*   **Hotkeys**: `Ctrl+Alt+S` to toggle start/stop (functionality depends on OS permissions).
+| Action | How |
+|--------|-----|
+| Start / stop | Dashboard **Start** button or `Ctrl+Alt+S` |
+| Quick actions | `Ctrl+K` command palette |
+| Compact timer | Title bar compact button (always on top) |
+| Minimize | Close button sends app to system tray |
+| Backups | **Settings → Data & backup** |
+
+## Data
+
+Sessions and projects live in `worktrack.db` beside the app. Schema updates are additive only (versioned migrations). Startup creates a timestamped backup in `backups/` when migrations run.
+
+## Stack
+
+Python · pywebview (WebView2) · SQLite · Chart.js · pystray · pynput · PyInstaller
+
+## License
+
+**Personal use is free.** You may use OneStop-Worktimer for private, non-commercial purposes at no charge.
+
+**Commercial use requires a paid license.** This includes use by companies, organizations, freelancers tracking client work, or any business-related time tracking. See [LICENSE](LICENSE) for full terms.
+
+To purchase a commercial license, open an issue or contact the maintainer via GitHub.
